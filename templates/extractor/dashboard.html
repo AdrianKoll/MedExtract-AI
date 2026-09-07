@@ -1,0 +1,34 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MedExtract AI | Django local</title>
+  <link rel="stylesheet" href="{% static 'extractor/app.css' %}">
+</head>
+<body>
+  <main class="shell">
+    <header><div><p class="eyebrow">Django · SQLite · processamento local</p><h1>MedExtract AI</h1><p class="subtitle">Tela de validação do backend para organização de prescrições.</p></div><a href="../index.html">Portfólio</a></header>
+    <section class="grid">
+      <form method="post" enctype="multipart/form-data" class="card">
+        {% csrf_token %}
+        <p class="eyebrow">Entrada</p><h2>Texto da prescrição</h2>
+        <label for="source_text">Conteúdo recebido pelo backend</label>
+        <textarea id="source_text" name="source_text" rows="8" placeholder="Amoxicilina 500 mg, tomar 1 cápsula a cada 8 horas por 7 dias.">{{ source_text }}</textarea>
+        <div class="upload-row"><label>Tipo de arquivo<select name="source_type"><option value="image">Imagem da receita</option><option value="audio">Arquivo de áudio</option></select></label><label>Arquivo<input type="file" name="source_file" accept="image/*,audio/*"></label></div>
+        <button type="submit">Processar entrada</button>
+        {% if error %}<p class="error">{{ error }}</p>{% endif %}
+        <p class="hint">Texto, imagem ou áudio chegam ao mesmo backend Django. Imagens passam por OCR local; áudios são transcritos com Whisper local. Depois, todos seguem para a mesma extração Python e aparecem na ficha ao lado.</p>
+      </form>
+      <section class="card">
+        <p class="eyebrow">Saída</p><h2>Dados extraídos</h2>
+        {% if result %}<dl>{% for key, value in result.items %}<div><dt>{{ key|title }}</dt><dd>{{ value|default:'Não identificado' }}</dd></div>{% endfor %}</dl>{% else %}<p class="empty">Envie uma prescrição para validar o fluxo completo do backend.</p>{% endif %}
+      </section>
+    </section>
+    <section class="card history"><div class="history-head"><div><p class="eyebrow">Persistência</p><h2>Histórico do SQLite</h2></div><form method="post" action="{% url 'clear_history' %}">{% csrf_token %}<button class="quiet" type="submit">Apagar registros</button></form></div>
+      {% if history %}<div class="records">{% for item in history %}<article><strong>{{ item.medicine|default:'Sem medicamento identificado' }}</strong><span>{{ item.strength|default:'Sem concentração' }} · {{ item.created_at|date:'d/m/Y H:i' }}</span></article>{% endfor %}</div>{% else %}<p class="empty">Nenhum registro salvo.</p>{% endif %}
+    </section>
+  </main>
+</body>
+</html>
