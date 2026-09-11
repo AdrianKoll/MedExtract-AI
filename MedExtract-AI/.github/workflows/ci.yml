@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      DJANGO_ENV: development
+      DJANGO_SECRET_KEY: ci-only-secret
+      DJANGO_DEBUG: "false"
+
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Instalar dependências
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+      - name: Verificar configuração Django
+        run: python manage.py check
+      - name: Executar migrações de teste
+        run: python manage.py migrate --noinput
+      - name: Executar testes
+        run: python manage.py test
