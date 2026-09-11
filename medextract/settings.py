@@ -1,9 +1,14 @@
+import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-SECRET_KEY = 'medextract-local-development-key'
-DEBUG = True
-ALLOWED_HOSTS = []
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
+if not SECRET_KEY:
+    if os.environ.get('DJANGO_ENV', 'development').lower() == 'production':
+        raise RuntimeError('DJANGO_SECRET_KEY deve ser definida em produção.')
+    SECRET_KEY = 'local-development-only-change-me'
+DEBUG = os.environ.get('DJANGO_DEBUG', 'false').lower() == 'true'
+ALLOWED_HOSTS = [host.strip() for host in os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost').split(',') if host.strip()]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -47,4 +52,6 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 MEDIA_ROOT = BASE_DIR / 'media'
 MEDIA_URL = 'media/'
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
