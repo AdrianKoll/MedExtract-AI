@@ -61,12 +61,12 @@ MedExtract/
 ├── static/extractor/app.css
 ├── .env.example
 ├── manage.py
-└── requirements.txt
+└── pyproject.toml
 ```
 
 ## Execução recomendada com Docker
 
-Docker encapsula Python, Django, Tesseract em português, FFmpeg, PostgreSQL e as dependências do projeto. Não é necessário criar `venv` nem instalar dependências Python no sistema host. O `requirements.txt` continua dentro da imagem como manifesto reprodutível das dependências do container.
+Docker encapsula Python, Django, Tesseract em português, FFmpeg, PostgreSQL e as dependências do projeto. Não é necessário criar `venv` nem instalar dependências Python no sistema host. O `pyproject.toml` é usado pelo Docker como manifesto de dependências e metadados do projeto.
 
 ```bash
 cp .env.example .env
@@ -90,7 +90,7 @@ No Android, o ZIP pode ser extraído e enviado ao GitHub pelo aplicativo de Git.
 ```powershell
 python -m venv .venv
 .venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
+python -m pip install .
 Copy-Item .env.example .env
 python manage.py migrate
 python manage.py runserver
@@ -103,7 +103,7 @@ Abra <http://127.0.0.1:8000/>.
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -r requirements.txt
+python -m pip install .
 cp .env.example .env
 python manage.py migrate
 python manage.py runserver

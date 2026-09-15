@@ -13,8 +13,10 @@ RUN apt-get update \
         tesseract-ocr-por \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+COPY pyproject.toml README.md ./
+COPY extractor ./extractor
+COPY medextract ./medextract
+RUN pip install --no-cache-dir .
 
 COPY . .
 COPY docker/entrypoint.sh /usr/local/bin/medextract-entrypoint
