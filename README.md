@@ -66,15 +66,15 @@ MedExtract/
 
 ## Execução recomendada com Docker
 
-Docker encapsula Python, Django, Tesseract em português, FFmpeg e as dependências do projeto. Não é necessário criar `venv` nem instalar dependências Python no sistema host. O `requirements.txt` continua dentro da imagem como manifesto reprodutível das dependências do container.
+Docker encapsula Python, Django, Tesseract em português, FFmpeg, PostgreSQL e as dependências do projeto. Não é necessário criar `venv` nem instalar dependências Python no sistema host. O `requirements.txt` continua dentro da imagem como manifesto reprodutível das dependências do container.
 
 ```bash
 cp .env.example .env
-# edite .env e defina DJANGO_SECRET_KEY
+# edite .env e defina DJANGO_SECRET_KEY e POSTGRES_PASSWORD
 docker compose up --build
 ```
 
-Acesse <http://127.0.0.1:8000/>. O container executa as migrações e coleta os arquivos estáticos automaticamente. O banco SQLite e a mídia ficam em volumes Docker persistentes.
+Acesse <http://127.0.0.1:8000/>. O container web espera o PostgreSQL ficar saudável, executa as migrações e coleta os arquivos estáticos automaticamente. O PostgreSQL, a mídia e os estáticos ficam em volumes Docker persistentes.
 
 Para parar e acompanhar os logs:
 
@@ -113,7 +113,7 @@ Para OCR de imagens, o Tesseract precisa estar instalado no sistema e disponíve
 
 ## Configuração
 
-Nunca envie `.env`, `db.sqlite3` ou arquivos em `media/` para o GitHub. Em produção, defina `DJANGO_ENV=production`, `DJANGO_SECRET_KEY` forte, `DJANGO_DEBUG=false` e `DJANGO_ALLOWED_HOSTS` com os domínios autorizados. O projeto recusa iniciar em produção sem uma chave configurada.
+Nunca envie `.env`, `db.sqlite3` ou arquivos em `media/` para o GitHub. Em produção, defina `DJANGO_ENV=production`, `DJANGO_SECRET_KEY` forte, `DJANGO_DEBUG=false`, `DJANGO_ALLOWED_HOSTS` com os domínios autorizados e `POSTGRES_PASSWORD` forte. O Compose cria um serviço PostgreSQL separado e conecta o Django por `DATABASE_URL`; fora do Docker, o projeto continua usando SQLite quando `DATABASE_URL` não é definida.
 
 ## Testes
 
