@@ -1,0 +1,30 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local application data
+db.sqlite3
+media/
+staticfiles/
+backups/
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+
+# Archives
+*.zip

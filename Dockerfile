@@ -22,7 +22,7 @@ COPY . .
 COPY docker/entrypoint.sh /usr/local/bin/medextract-entrypoint
 RUN chmod +x /usr/local/bin/medextract-entrypoint \
     && useradd --create-home --uid 10001 appuser \
-    && mkdir -p /app/media /app/staticfiles \
+    && mkdir -p /app/media /app/staticfiles /app/backups \
     && chown -R appuser:appuser /app
 
 USER appuser
