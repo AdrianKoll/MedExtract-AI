@@ -1,5 +1,4 @@
 import json
-from unittest.mock import Mock, patch
 
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -65,22 +64,3 @@ class ExtractionTests(TestCase):
         forbidden = self.client.get(reverse('api-prescription-detail', kwargs={'pk': other.pk}), HTTP_AUTHORIZATION=f'Bearer {token}')
         self.assertEqual(forbidden.status_code, 404)
 
-    @patch('extractor.ocr.post_file')
-    def test_external_ocr_provider_returns_text(self, post_file):
-        response = Mock()
-        response.json.return_value = {'IsErroredOnProcessing': False, 'ParsedResults': [{'ParsedText': 'Amoxicilina 500 mg'}]}
-        post_file.return_value = response
-        from .ocr import _external_ocr
-        upload = SimpleUploadedFile('receita.png', b'image', content_type='image/png')
-        self.assertEqual(_external_ocr(upload, 'test-token'), 'Amoxicilina 500 mg')
-        post_file.assert_called_once()
-
-    @patch('extractor.transcription.post_file')
-    def test_external_transcription_provider_returns_text(self, post_file):
-        response = Mock()
-        response.json.return_value = {'text': 'Tomar uma cápsula por sete dias'}
-        post_file.return_value = response
-        from .transcription import _external_transcription
-        upload = SimpleUploadedFile('audio.wav', b'audio', content_type='audio/wav')
-        self.assertEqual(_external_transcription(upload, 'test-token'), 'Tomar uma cápsula por sete dias')
-        post_file.assert_called_once()

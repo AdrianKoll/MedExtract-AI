@@ -1,132 +1,74 @@
 # MedExtract
 
-Aplicação Django para receber texto, imagens e áudio relacionados a prescrições e organizar os campos identificados em uma ficha estruturada. O projeto usa SQLite no desenvolvimento local e PostgreSQL no ambiente Docker, com uma separação simples entre entrada HTTP, OCR, transcrição e regra de extração.
+Aplicação web desenvolvida com Django para organizar informações de prescrições a partir de texto, imagens e arquivos de áudio. O sistema transforma a entrada em uma ficha estruturada com medicamento, concentração, quantidade, posologia, duração e observações.
 
-> O resultado é apenas uma pré-organização técnica do conteúdo recebido. Não substitui a conferência de um profissional de saúde e não deve ser usado para decidir tratamento ou alterar uma prescrição.
+> O resultado é uma organização preliminar das informações. A conferência por um profissional de saúde continua sendo obrigatória. O sistema não deve ser usado para decidir tratamentos ou alterar prescrições.
+
+## Visão geral
+
+O processamento de documentos é local. Imagens são tratadas com Pillow e Tesseract dentro do ambiente da aplicação, sem envio automático para serviços externos. A execução recomendada utiliza Docker para manter versões e dependências reproduzíveis.
 
 ## Funcionalidades
 
+- cadastro, login e logout;
 - entrada manual de texto;
-- leitura de imagens por OCR local;
-- transcrição local de arquivos de áudio;
-- identificação de medicamento, concentração, quantidade, posologia e duração;
-- persistência do histórico em SQLite local ou PostgreSQL no Docker;
-- formulário protegido por CSRF;
-- validação de extensão e tamanho de uploads;
-- testes automatizados e pipeline de integração contínua.
-
-## Provedores externos opcionais
-
-O projeto possui adaptadores externos configuráveis, sem acoplar a view a um fornecedor específico:
-
-- **OCR de imagem:** OCR.space via `OCR_SPACE_API_KEY`. A documentação do serviço informa uma chave gratuita, limite de arquivo de 1 MB e limite de requisições por IP no plano gratuito.
-- **Transcrição de áudio:** Hugging Face Inference via `HF_TOKEN`, usando um endpoint de speech-to-text configurável em `HF_AUDIO_API_URL`.
-
-Quando a variável do provedor não está configurada, o sistema usa o processamento local já existente. Se o provedor falhar, também há fallback local. As chaves são lidas somente do ambiente e não devem ser colocadas no código ou no README.
+- leitura local de imagens por Tesseract OCR;
+- transcrição local opcional de arquivos de áudio;
+- extração estruturada dos principais campos da prescrição;
+- histórico individual por usuário;
+- API versionada com autenticação Bearer;
+- tokens com expiração e revogação;
+- validação de uploads e limites de tamanho;
+- proteção contra excesso de tentativas de login;
+- auditoria de operações relevantes;
+- limpeza de dados conforme política de retenção;
+- backups e endpoint de verificação de disponibilidade;
+- testes automatizados e integração contínua.
 
 ## Tecnologias
 
 - Python 3.11+
 - Django 5+
-- SQLite para desenvolvimento
-- Pillow e Tesseract para OCR local
+- PostgreSQL no ambiente Docker
+- SQLite para desenvolvimento local sem Docker
+- Pillow e Tesseract OCR com idioma português
 - faster-whisper para transcrição local opcional
-- GitHub Actions para checks automatizados
-
-O OCR e a transcrição dependem de ferramentas/modelos locais. Não há chave de API ou serviço pago obrigatório no fluxo padrão. A instalação do mecanismo de transcrição pode exigir download de um modelo e mais memória do que a execução somente com texto.
-
-Para demonstrar as integrações externas, preencha o `.env`:
-
-```env
-OCR_SPACE_API_KEY=sua-chave-gratuita
-HF_TOKEN=seu-token-com-permissao-de-inferencia
-```
-
-O OCR.space documenta o endpoint `https://api.ocr.space/parse/image`. A documentação do Hugging Face descreve a autenticação por token e o uso de provedores de inferência. Verifique os limites e termos atuais de cada serviço antes de enviar dados reais. Prescrições contêm dados sensíveis; use somente imagens e áudios de teste em serviços externos, com autorização adequada.
-
-## Estrutura
-
-```text
-MedExtract/
-├── extractor/
-│   ├── api.py
-│   ├── migrations/
-│   ├── models.py
-│   ├── ocr.py
-│   ├── services.py
-│   ├── transcription.py
-│   ├── validators.py
-│   ├── views.py
-│   └── tests.py
-├── medextract/settings.py
-├── templates/extractor/dashboard.html
-├── static/extractor/app.css
-├── .env.example
-├── manage.py
-└── pyproject.toml
-```
-
-## Segurança e API para integrações
-
-O front-end público funciona como uma vitrine: visitantes podem testar uma extração, mas o resultado não é salvo sem autenticação. Usuários cadastrados podem salvar e apagar somente os próprios registros. O histórico é filtrado pelo proprietário no servidor, e não apenas pela interface.
-
-A API versionada exige um token Bearer. Para obter um token em uma conta de demonstração, envie as credenciais por HTTPS:
-
-```bash
-curl -X POST https://seu-dominio.example/api/v1/token/ \
-  -H 'Content-Type: application/json' \
-  -d '{"username":"seu-usuario","password":"sua-senha"}'
-```
-
-Use o token retornado para criar e consultar prescrições de texto:
-
-```bash
-curl -X POST https://seu-dominio.example/api/v1/prescriptions/ \
-  -H "Authorization: Bearer medx_seu_token" \
-  -H 'Content-Type: application/json' \
-  -d '{"source_text":"Amoxicilina 500 mg, tomar por 7 dias."}'
-
-curl https://seu-dominio.example/api/v1/prescriptions/ \
-  -H "Authorization: Bearer medx_seu_token"
-```
-
-Cada token pertence a um usuário e é armazenado somente como hash no banco. Cada consulta, leitura e exclusão é limitada ao proprietário autenticado. Tokens devem ser tratados como senhas, usados exclusivamente sobre HTTPS e revogados por rotação ou exclusão da credencial quando houver suspeita de vazamento. A API de demonstração aceita texto; o front-end continua oferecendo os fluxos de upload para OCR e áudio.
+- Gunicorn
+- Docker e Docker Compose
+- GitHub Actions
 
 ## Execução recomendada com Docker
 
-Docker encapsula Python, Django, Tesseract em português, FFmpeg, PostgreSQL e as dependências do projeto. Não é necessário criar `venv` nem instalar dependências Python no sistema host. O `pyproject.toml` é usado pelo Docker como manifesto de dependências e metadados do projeto.
+O contêiner instala Python, Django, Tesseract, o idioma português e FFmpeg. Para iniciar:
 
 ```bash
+git clone https://github.com/AdrianKoll/MedExtract-AI.git
+cd MedExtract-AI
 cp .env.example .env
-# edite .env e defina DJANGO_SECRET_KEY e POSTGRES_PASSWORD
+```
+
+Edite `.env` e defina uma chave longa para `DJANGO_SECRET_KEY` e uma senha forte para `POSTGRES_PASSWORD`. Depois execute:
+
+```bash
 docker compose up --build
 ```
 
-Acesse <http://127.0.0.1:8000/>. O container web espera o PostgreSQL ficar saudável, executa as migrações e coleta os arquivos estáticos automaticamente. O PostgreSQL, a mídia e os estáticos ficam em volumes Docker persistentes.
+A aplicação ficará disponível em <http://127.0.0.1:8000/>.
 
-Para parar e acompanhar os logs:
+Para consultar os logs ou encerrar o ambiente:
 
 ```bash
-docker compose down
 docker compose logs -f web
+docker compose down
 ```
 
-No Android, o ZIP pode ser extraído e enviado ao GitHub pelo aplicativo de Git. Para executar os containers, será necessário um computador ou servidor com Docker; o celular pode editar e versionar o projeto, mas não substitui um host Docker completo.
+As migrações são executadas pelo entrypoint do contêiner antes da inicialização do servidor.
 
-## Execução local — Windows PowerShell sem Docker
+## Execução sem Docker
 
-```powershell
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-python -m pip install .
-Copy-Item .env.example .env
-python manage.py migrate
-python manage.py runserver
-```
+O SQLite pode ser usado para desenvolvimento, estudo e testes rápidos. Esse caminho ainda exige a instalação das dependências Python, mas não requer PostgreSQL ou Docker.
 
-Abra <http://127.0.0.1:8000/>.
-
-## Execução local — Linux/macOS
+### Linux e macOS
 
 ```bash
 python3 -m venv .venv
@@ -137,29 +79,105 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-Para OCR de imagens, o Tesseract precisa estar instalado no sistema e disponível no `PATH`. O processamento de áudio usa o modelo configurado em `extractor/transcription.py`; a primeira execução pode baixar arquivos grandes.
+### Windows PowerShell
 
-## Configuração e publicação
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install .
+Copy-Item .env.example .env
+python manage.py migrate
+python manage.py runserver
+```
 
-Nunca envie `.env`, `db.sqlite3` ou arquivos em `media/` para o GitHub. Em produção, defina `DJANGO_ENV=production`, use uma `DJANGO_SECRET_KEY` longa e aleatória, mantenha `DJANGO_DEBUG=false`, configure `DJANGO_ALLOWED_HOSTS` com os domínios autorizados e use uma senha forte no PostgreSQL. Se a aplicação estiver atrás de HTTPS, ative `DJANGO_SECURE_SSL_REDIRECT`, `DJANGO_SESSION_COOKIE_SECURE` e `DJANGO_CSRF_COOKIE_SECURE`; depois de confirmar que todo o domínio usa HTTPS, configure também `DJANGO_SECURE_HSTS_SECONDS` com uma política adequada. O Compose cria um serviço PostgreSQL separado e conecta o Django por `DATABASE_URL`; fora do Docker, o projeto continua usando SQLite quando `DATABASE_URL` não é definida.
+Abra <http://127.0.0.1:8000/> no navegador.
 
-Este repositório está pronto para publicação como código de portfólio e demonstração técnica. Para uso real com prescrições, ainda devem ser definidos política de retenção, auditoria, rate limiting, gestão operacional de tokens e requisitos legais aplicáveis. Prescrições são dados sensíveis; não envie dados reais a provedores externos sem consentimento, base legal e uma política de retenção definida. O sistema também não substitui revisão de um profissional de saúde.
+Para usar OCR fora do Docker, o Tesseract precisa estar instalado no sistema e disponível no `PATH`, incluindo o pacote de idioma português. A transcrição local é opcional e exige o mecanismo configurado em `extractor/transcription.py`.
+
+## API
+
+A API exige um token Bearer. Solicite um token com as credenciais de um usuário cadastrado:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/v1/token/ \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"seu-usuario","password":"sua-senha"}'
+```
+
+Crie uma extração de texto:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/v1/prescriptions/ \
+  -H 'Authorization: Bearer medx_seu_token' \
+  -H 'Content-Type: application/json' \
+  -d '{"source_text":"Amoxicilina 500 mg, tomar uma cápsula por 7 dias."}'
+```
+
+Consulte o histórico:
+
+```bash
+curl http://127.0.0.1:8000/api/v1/prescriptions/ \
+  -H 'Authorization: Bearer medx_seu_token'
+```
+
+Revogue o token atual:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/v1/token/revoke/ \
+  -H 'Authorization: Bearer medx_seu_token'
+```
+
+O endpoint de disponibilidade é `GET /healthz/`.
+
+## Segurança e operação
+
+A aplicação possui HTTPS configurável, cookies seguros, proteção CSRF, headers de segurança, isolamento por proprietário, rate limit, proteção contra tentativas repetidas de login, expiração e revogação de tokens, validação de uploads e auditoria.
+
+Em produção, configure `DJANGO_ENV=production`, `DJANGO_SECRET_KEY`, `DJANGO_DEBUG=false`, hosts autorizados, HTTPS e PostgreSQL. Nunca versionar `.env`, `db.sqlite3`, arquivos de mídia ou backups.
+
+Os comandos de manutenção são:
+
+```bash
+python manage.py cleanup_data
+python manage.py backup_database
+python manage.py monitor_health
+```
 
 ## Testes
 
 ```bash
 python manage.py check
 python manage.py test
+python manage.py makemigrations --check --dry-run
 ```
 
-O workflow em `.github/workflows/ci.yml` executa configuração, migrações e testes em pushes e pull requests na branch `main`, com permissão de conteúdo somente leitura.
+O workflow de integração contínua executa as verificações e os testes em alterações enviadas à branch `main`.
 
-## Status
+## Estrutura
 
-Projeto de portfólio em evolução, com foco em processamento local, organização de dados e validação de um fluxo Django. Antes de qualquer uso real, é necessário revisar privacidade, retenção, controle de acesso, criptografia, observabilidade e validação clínica.
+```text
+extractor/
+├── api.py
+├── forms.py
+├── health.py
+├── management/commands/
+├── migrations/
+├── models.py
+├── ocr.py
+├── security.py
+├── services.py
+├── tests.py
+├── tests_security.py
+├── transcription.py
+├── urls.py
+├── validators.py
+└── views.py
+medextract/
+├── settings.py
+├── urls.py
+└── wsgi.py
+```
 
-## Segurança implementada
+## Uso
 
-A versão atual inclui HTTPS configurável, cookies e headers seguros, cadastro e login com senha forte e proteção contra brute force, isolamento por usuário, rate limit básico, limites de upload, tokens API múltiplos com expiração e revogação, integrações independentes por usuário, auditoria, retenção formal, limpeza automática de dados de demonstração, backups, healthcheck e alertas opcionais. Consulte [`SECURITY.md`](SECURITY.md) para a política operacional, cron, revisão jurídica e plano de testes de segurança.
-
-Para operação recorrente, execute `cleanup_data`, `backup_database` e `monitor_health` por um scheduler do ambiente. O endpoint `/healthz/` pode ser usado por um monitor externo.
+Este projeto é apresentado para fins de estudo e demonstração técnica. Antes de processar dados reais, faça a revisão de privacidade, segurança, requisitos regulatórios e responsabilidades envolvidas.
