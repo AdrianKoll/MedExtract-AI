@@ -64,7 +64,28 @@ MedExtract/
 └── requirements.txt
 ```
 
-## Execução local — Windows PowerShell
+## Execução recomendada com Docker
+
+Docker encapsula Python, Django, Tesseract em português, FFmpeg e as dependências do projeto. Não é necessário criar `venv` nem instalar dependências Python no sistema host. O `requirements.txt` continua dentro da imagem como manifesto reprodutível das dependências do container.
+
+```bash
+cp .env.example .env
+# edite .env e defina DJANGO_SECRET_KEY
+docker compose up --build
+```
+
+Acesse <http://127.0.0.1:8000/>. O container executa as migrações e coleta os arquivos estáticos automaticamente. O banco SQLite e a mídia ficam em volumes Docker persistentes.
+
+Para parar e acompanhar os logs:
+
+```bash
+docker compose down
+docker compose logs -f web
+```
+
+No Android, o ZIP pode ser extraído e enviado ao GitHub pelo aplicativo de Git. Para executar os containers, será necessário um computador ou servidor com Docker; o celular pode editar e versionar o projeto, mas não substitui um host Docker completo.
+
+## Execução local — Windows PowerShell sem Docker
 
 ```powershell
 python -m venv .venv
