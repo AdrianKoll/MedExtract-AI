@@ -1,6 +1,6 @@
 # MedExtract
 
-Aplicação Django para receber texto, imagens e áudio relacionados a prescrições e organizar os campos identificados em uma ficha estruturada. O projeto mantém o processamento local, SQLite para desenvolvimento e uma separação simples entre entrada HTTP, OCR, transcrição e regra de extração.
+Aplicação Django para receber texto, imagens e áudio relacionados a prescrições e organizar os campos identificados em uma ficha estruturada. O projeto usa SQLite no desenvolvimento local e PostgreSQL no ambiente Docker, com uma separação simples entre entrada HTTP, OCR, transcrição e regra de extração.
 
 > O resultado é apenas uma pré-organização técnica do conteúdo recebido. Não substitui a conferência de um profissional de saúde e não deve ser usado para decidir tratamento ou alterar uma prescrição.
 
@@ -10,7 +10,7 @@ Aplicação Django para receber texto, imagens e áudio relacionados a prescriç
 - leitura de imagens por OCR local;
 - transcrição local de arquivos de áudio;
 - identificação de medicamento, concentração, quantidade, posologia e duração;
-- persistência do histórico em SQLite;
+- persistência do histórico em SQLite local ou PostgreSQL no Docker;
 - formulário protegido por CSRF;
 - validação de extensão e tamanho de uploads;
 - testes automatizados e pipeline de integração contínua.
@@ -49,6 +49,8 @@ O OCR.space documenta o endpoint `https://api.ocr.space/parse/image`. A document
 ```text
 MedExtract/
 ├── extractor/
+│   ├── api.py
+│   ├── migrations/
 │   ├── models.py
 │   ├── ocr.py
 │   ├── services.py
@@ -63,6 +65,32 @@ MedExtract/
 ├── manage.py
 └── pyproject.toml
 ```
+
+## Segurança e API para integrações
+
+O front-end público funciona como uma vitrine: visitantes podem testar uma extração, mas o resultado não é salvo sem autenticação. Usuários cadastrados podem salvar e apagar somente os próprios registros. O histórico é filtrado pelo proprietário no servidor, e não apenas pela interface.
+
+A API versionada exige um token Bearer. Para obter um token em uma conta de demonstração, envie as credenciais por HTTPS:
+
+```bash
+curl -X POST https://seu-dominio.example/api/v1/token/ \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"seu-usuario","password":"sua-senha"}'
+```
+
+Use o token retornado para criar e consultar prescrições de texto:
+
+```bash
+curl -X POST https://seu-dominio.example/api/v1/prescriptions/ \
+  -H "Authorization: Bearer medx_seu_token" \
+  -H 'Content-Type: application/json' \
+  -d '{"source_text":"Amoxicilina 500 mg, tomar por 7 dias."}'
+
+curl https://seu-dominio.example/api/v1/prescriptions/ \
+  -H "Authorization: Bearer medx_seu_token"
+```
+
+Cada token pertence a um usuário e é armazenado somente como hash no banco. Cada consulta, leitura e exclusão é limitada ao proprietário autenticado. Tokens devem ser tratados como senhas, usados exclusivamente sobre HTTPS e revogados por rotação ou exclusão da credencial quando houver suspeita de vazamento. A API de demonstração aceita texto; o front-end continua oferecendo os fluxos de upload para OCR e áudio.
 
 ## Execução recomendada com Docker
 
@@ -111,9 +139,11 @@ python manage.py runserver
 
 Para OCR de imagens, o Tesseract precisa estar instalado no sistema e disponível no `PATH`. O processamento de áudio usa o modelo configurado em `extractor/transcription.py`; a primeira execução pode baixar arquivos grandes.
 
-## Configuração
+## Configuração e publicação
 
-Nunca envie `.env`, `db.sqlite3` ou arquivos em `media/` para o GitHub. Em produção, defina `DJANGO_ENV=production`, `DJANGO_SECRET_KEY` forte, `DJANGO_DEBUG=false`, `DJANGO_ALLOWED_HOSTS` com os domínios autorizados e `POSTGRES_PASSWORD` forte. O Compose cria um serviço PostgreSQL separado e conecta o Django por `DATABASE_URL`; fora do Docker, o projeto continua usando SQLite quando `DATABASE_URL` não é definida.
+Nunca envie `.env`, `db.sqlite3` ou arquivos em `media/` para o GitHub. Em produção, defina `DJANGO_ENV=production`, use uma `DJANGO_SECRET_KEY` longa e aleatória, mantenha `DJANGO_DEBUG=false`, configure `DJANGO_ALLOWED_HOSTS` com os domínios autorizados e use uma senha forte no PostgreSQL. Se a aplicação estiver atrás de HTTPS, ative `DJANGO_SECURE_SSL_REDIRECT`, `DJANGO_SESSION_COOKIE_SECURE` e `DJANGO_CSRF_COOKIE_SECURE`; depois de confirmar que todo o domínio usa HTTPS, configure também `DJANGO_SECURE_HSTS_SECONDS` com uma política adequada. O Compose cria um serviço PostgreSQL separado e conecta o Django por `DATABASE_URL`; fora do Docker, o projeto continua usando SQLite quando `DATABASE_URL` não é definida.
+
+Este repositório está pronto para publicação como código de portfólio e demonstração técnica. Para uso real com prescrições, ainda devem ser definidos política de retenção, auditoria, rate limiting, gestão operacional de tokens e requisitos legais aplicáveis. Prescrições são dados sensíveis; não envie dados reais a provedores externos sem consentimento, base legal e uma política de retenção definida. O sistema também não substitui revisão de um profissional de saúde.
 
 ## Testes
 
@@ -127,3 +157,9 @@ O workflow em `.github/workflows/ci.yml` executa configuração, migrações e t
 ## Status
 
 Projeto de portfólio em evolução, com foco em processamento local, organização de dados e validação de um fluxo Django. Antes de qualquer uso real, é necessário revisar privacidade, retenção, controle de acesso, criptografia, observabilidade e validação clínica.
+
+## Segurança implementada
+
+A versão atual inclui HTTPS configurável, cookies e headers seguros, cadastro e login com senha forte e proteção contra brute force, isolamento por usuário, rate limit básico, limites de upload, tokens API múltiplos com expiração e revogação, integrações independentes por usuário, auditoria, retenção formal, limpeza automática de dados de demonstração, backups, healthcheck e alertas opcionais. Consulte [`SECURITY.md`](SECURITY.md) para a política operacional, cron, revisão jurídica e plano de testes de segurança.
+
+Para operação recorrente, execute `cleanup_data`, `backup_database` e `monitor_health` por um scheduler do ambiente. O endpoint `/healthz/` pode ser usado por um monitor externo.
