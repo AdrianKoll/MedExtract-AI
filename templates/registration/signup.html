@@ -1,0 +1,3 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Criar conta | MedExtract</title></head>
+<body><main><h1>Criar conta de demonstração</h1><p>O cadastro permite salvar um histórico privado de testes.</p><form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit">Criar conta</button></form><p><a href="{% url 'login' %}">Já tenho uma conta</a> · <a href="{% url 'dashboard' %}">Voltar à vitrine</a></p></main></body></html>
