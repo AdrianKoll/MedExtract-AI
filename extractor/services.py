@@ -26,6 +26,11 @@ def _medicine_candidates(text):
     candidates = []
     for match in MEDICINE_WITH_STRENGTH.finditer(text):
         medicine = clean(match.group(1))
+        # OCR pode juntar o título da seção ao primeiro medicamento.
+        for marker in ('prescrição médica', 'prescrição', 'receita médica'):
+            if marker in medicine.lower():
+                medicine = re.split(marker, medicine, maxsplit=1, flags=re.I)[-1].strip()
+                break
         strength = clean(match.group(2))
         pair = (medicine, strength)
         if pair not in candidates:
