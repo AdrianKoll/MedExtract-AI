@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import logging
+
 from PIL import Image, ImageOps
 import pytesseract
+
+logger = logging.getLogger(__name__)
 
 MAX_IMAGE_PIXELS_FOR_OCR = 20_000_000
 MAX_OCR_DIMENSION = 2400
@@ -34,4 +38,5 @@ def extract_text_from_image(uploaded_file) -> str:
         return pytesseract.image_to_string(image, lang='por+eng', timeout=OCR_TIMEOUT_SECONDS).strip()
     except (pytesseract.TesseractError, RuntimeError, OSError) as exc:
         # Converte falha do binário/idioma ou timeout em erro tratável pela view.
+        logger.exception('Falha controlada no OCR: %s', exc.__class__.__name__)
         raise ValueError('O OCR não conseguiu processar esta imagem no tempo limite.') from exc

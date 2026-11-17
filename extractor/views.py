@@ -1,3 +1,5 @@
+import logging
+
 from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
 from django.core.exceptions import ValidationError
@@ -9,6 +11,8 @@ from .security import audit, login_with_protection
 from .services import extract_prescription
 from .transcription import transcribe_audio
 from .validators import validate_upload
+
+logger = logging.getLogger(__name__)
 
 
 def dashboard(request):
@@ -42,8 +46,16 @@ def dashboard(request):
                 audit(request, 'prescription.create', metadata={'id': item.pk})
             else:
                 audit(request, 'demo.extract')
-        except (ValidationError, ValueError, RuntimeError):
-            error = 'Não foi possível processar a entrada. Verifique o formato e tente novamente.'
+        except (ValidationError, ValueError, RuntimeError) as exc:
+            # Mostra apenas mensagens controladas pelo aplicativo; nunca devolve
+            # traceback nem dados do arquivo para o navegador.
+            safe_errors = {
+                'A imagem é grande demais para o processamento automático.',
+                'O arquivo enviado não contém uma imagem válida.',
+                'O OCR não conseguiu processar esta imagem no tempo limite.',
+            }
+            error = str(exc) if str(exc) in safe_errors else 'Não foi possível processar a entrada. Verifique o formato e tente novamente.'
+            logger.warning('Entrada rejeitada: tipo=%s erro=%s', source_type, exc.__class__.__name__)
             audit(request, 'prescription.create', 'failure')
     history = Prescription.objects.filter(owner=request.user)[:8] if request.user.is_authenticated else []
     return render(request, 'extractor/dashboard.html', {'result': result, 'source_text': source_text, 'history': history, 'source_type': source_type, 'error': error})
