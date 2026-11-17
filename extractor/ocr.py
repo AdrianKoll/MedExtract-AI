@@ -8,8 +8,10 @@ import pytesseract
 logger = logging.getLogger(__name__)
 
 MAX_IMAGE_PIXELS_FOR_OCR = 8_000_000
-MAX_OCR_DIMENSION = 1800
-OCR_TIMEOUT_SECONDS = 15
+MAX_OCR_DIMENSION = 1400
+OCR_TIMEOUT_SECONDS = 20
+OCR_LANGUAGE = 'por'
+OCR_CONFIG = '--psm 6'
 
 
 def extract_text_from_image(uploaded_file) -> str:
@@ -39,9 +41,15 @@ def extract_text_from_image(uploaded_file) -> str:
     image = ImageOps.autocontrast(image)
     image.thumbnail((MAX_OCR_DIMENSION, MAX_OCR_DIMENSION), Image.Resampling.LANCZOS)
 
-    # O idioma português é prioritário; inglês cobre abreviações e nomes comuns.
+    # Uma receita costuma ser um bloco único de texto. O modo 6 e apenas o
+    # idioma português reduzem bastante o tempo e a memória do Tesseract.
     try:
-        return pytesseract.image_to_string(image, lang='por+eng', timeout=OCR_TIMEOUT_SECONDS).strip()
+        return pytesseract.image_to_string(
+            image,
+            lang=OCR_LANGUAGE,
+            config=OCR_CONFIG,
+            timeout=OCR_TIMEOUT_SECONDS,
+        ).strip()
     except (pytesseract.TesseractError, RuntimeError, OSError) as exc:
         # Converte falha do binário/idioma ou timeout em erro tratável pela view.
         logger.exception('Falha controlada no OCR: %s', exc.__class__.__name__)
