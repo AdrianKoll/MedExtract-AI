@@ -2,13 +2,20 @@ import re
 
 
 def clean(value):
+    # Remove pontuação residual capturada pelas expressões regulares.
     return value.rstrip(' .;') if value else ''
 
 
 def extract_prescription(text):
+    # A extração é deliberadamente determinística e local: não envia a receita
+    # para uma API externa e deixa os campos vazios quando não encontra evidência.
     normalized = re.sub(r'\s+', ' ', text).strip()
     first_sentence = re.split(r'[.!?]', normalized)[0]
+
+    # O início da frase normalmente contém o nome comercial ou princípio ativo.
     medicine_match = re.match(r'^([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9-]*(?:\s+[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9-]*)?)', first_sentence)
+
+    # Cada expressão procura um campo independente para tolerar formatos variados.
     strength_match = re.search(r'\b\d+(?:[.,]\d+)?\s*(?:mg|mcg|g|ml|ui|%)\b', normalized, re.I)
     quantity_match = re.search(r'(?:quantidade|qtd|caixa|cápsulas?|comprimidos?|frascos?)\s*[:\-]?\s*\d+', normalized, re.I)
     dosage_match = re.search(r'(?:tomar|usar|aplicar|ingerir)[^.]+?(?=\bpor\b|\bdurante\b|$)', normalized, re.I)
@@ -18,6 +25,7 @@ def extract_prescription(text):
     quantity = clean(quantity_match.group(0) if quantity_match else '')
     dosage = clean(dosage_match.group(0) if dosage_match else '')
     duration = clean(duration_match.group(0) if duration_match else '')
+    # O texto restante é preservado como observação, evitando perder informação.
     consumed = ' '.join(item for item in [medicine, strength, quantity, dosage, duration] if item)
     notes = normalized.replace(consumed, '').strip()
     return {'medicine': medicine, 'strength': strength, 'quantity': quantity, 'dosage': dosage, 'duration': duration, 'notes': notes}

@@ -29,7 +29,7 @@
         <p class="eyebrow">Vitrine</p><h2>Teste uma prescrição</h2>
         <label for="source_text">Texto da prescrição</label>
         <textarea id="source_text" name="source_text" rows="8" placeholder="Amoxicilina 500 mg, tomar 1 cápsula a cada 8 horas por 7 dias.">{{ source_text }}</textarea>
-        <div class="upload-row"><label>Tipo de entrada<select name="source_type"><option value="text">Texto</option><option value="image">Imagem da receita</option><option value="audio">Arquivo de áudio</option></select></label><label>Arquivo<input type="file" name="source_file" accept="image/*,audio/*"></label></div>
+        <div class="upload-row"><label>Tipo de entrada<select name="source_type"><option value="text"{% if source_type == 'text' %} selected{% endif %}>Texto</option><option value="image"{% if source_type == 'image' %} selected{% endif %}>Imagem da receita</option><option value="audio"{% if source_type == 'audio' %} selected{% endif %}>Arquivo de áudio</option></select></label><label>Arquivo<input type="file" name="source_file" accept="image/*,audio/*"></label></div>
         <button type="submit">Processar entrada</button>
         {% if error %}<p class="error">{{ error }}</p>{% endif %}
         {% if not request.user.is_authenticated %}<p class="hint">Você pode testar a extração sem criar conta. Para salvar e consultar seu histórico privado, entre ou crie uma conta.</p>{% endif %}

@@ -4,6 +4,8 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+# Em produção a chave é obrigatória; o valor abaixo existe apenas para facilitar
+# o uso local e nunca deve ser reaproveitado em um ambiente público.
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 if not SECRET_KEY:
     if os.environ.get('DJANGO_ENV', 'development').lower() == 'production':
@@ -35,6 +37,8 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'medextract.urls'
 TEMPLATES = [{'BACKEND': 'django.template.backends.django.DjangoTemplates', 'DIRS': [BASE_DIR / 'templates'], 'APP_DIRS': True, 'OPTIONS': {'context_processors': ['django.template.context_processors.request', 'django.contrib.auth.context_processors.auth', 'django.contrib.messages.context_processors.messages']}}]
 WSGI_APPLICATION = 'medextract.wsgi.application'
+# DATABASE_URL permite usar PostgreSQL no container; sem ela, o desenvolvimento
+# local cai para SQLite para manter o setup simples.
 DATABASE_URL = os.environ.get('DATABASE_URL', '').strip()
 if DATABASE_URL.startswith(('postgres://', 'postgresql://')):
     database_url = urlparse(DATABASE_URL)

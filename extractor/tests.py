@@ -6,6 +6,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from .models import ApiToken, Prescription
+from .ocr import extract_text_from_image
 from .services import extract_prescription
 
 
@@ -40,6 +41,12 @@ class ExtractionTests(TestCase):
         self.assertEqual(Prescription.objects.count(), 0)
         self.assertContains(response, 'Não foi possível processar a entrada')
 
+    def test_ocr_rejects_file_that_is_not_a_real_image(self):
+        # A extensão e o MIME podem ser falsificados; Pillow precisa confirmar o conteúdo.
+        upload = SimpleUploadedFile('fake.png', b'not an image', content_type='image/png')
+        with self.assertRaises(ValueError):
+            extract_text_from_image(upload)
+
     def test_clear_history_only_deletes_current_users_records(self):
         self.client.force_login(self.user)
         Prescription.objects.create(owner=self.user, source_text='Meu registro')
@@ -63,4 +70,3 @@ class ExtractionTests(TestCase):
         self.assertEqual(listing.json()['results'][0]['id'], own.json()['id'])
         forbidden = self.client.get(reverse('api-prescription-detail', kwargs={'pk': other.pk}), HTTP_AUTHORIZATION=f'Bearer {token}')
         self.assertEqual(forbidden.status_code, 404)
-

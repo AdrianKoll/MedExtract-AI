@@ -17,10 +17,14 @@ class ApiToken(models.Model):
 
     @property
     def is_valid(self):
+        # Token válido precisa estar dentro do prazo, não revogado e ligado a
+        # uma conta ativa; isso é reavaliado em cada chamada da API.
         return self.revoked_at is None and self.expires_at > timezone.now() and self.user.is_active
 
     @staticmethod
     def issue_for_user(user, name='API token', lifetime=None):
+        # Apenas o hash é armazenado no banco; o token bruto não pode ser
+        # recuperado depois de emitido.
         lifetime = lifetime or settings.API_TOKEN_LIFETIME
         raw_token = f'medx_{secrets.token_urlsafe(32)}'
         credential = ApiToken.objects.create(

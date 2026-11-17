@@ -12,6 +12,8 @@ from .validators import validate_upload
 
 
 def dashboard(request):
+    # A mesma tela atende o demo público e a área autenticada; só a segunda
+    # persiste o resultado no histórico privado do usuário.
     result = None
     source_text = ''
     source_type = 'text'
@@ -29,6 +31,8 @@ def dashboard(request):
                 if source_type == 'text':
                     raise ValidationError('Selecione imagem ou áudio para enviar um arquivo.')
                 validate_upload(uploaded_file, source_type)
+                # Imagem passa pelo Tesseract; áudio passa pelo mecanismo local
+                # configurado em transcription.py, sem envio automático externo.
                 source_text = extract_text_from_image(uploaded_file) if source_type == 'image' else transcribe_audio(uploaded_file)
             if not source_text:
                 raise ValidationError('Informe um texto ou envie um arquivo com conteúdo legível.')
@@ -46,6 +50,7 @@ def dashboard(request):
 
 
 def clear_history(request):
+    # A exclusão sempre é limitada ao usuário autenticado atual.
     if request.method == 'POST' and request.user.is_authenticated:
         count, _ = Prescription.objects.filter(owner=request.user).delete()
         audit(request, 'history.clear', metadata={'count': count})

@@ -12,6 +12,7 @@ from .services import extract_prescription
 
 
 def _user_from_token(request):
+    # A API usa tokens próprios para não expor sessões de navegador em integrações.
     authorization = request.headers.get('Authorization', '')
     if not authorization.startswith('Bearer '):
         return None, None
@@ -24,12 +25,14 @@ def _json_error(message, status):
 
 
 def _serialize(prescription):
+    # Mantém uma resposta estável para o cliente sem retornar campos internos.
     return {'id': prescription.pk, 'source_type': prescription.source_type, 'source_name': prescription.source_name, 'medicine': prescription.medicine, 'strength': prescription.strength, 'quantity': prescription.quantity, 'dosage': prescription.dosage, 'duration': prescription.duration, 'notes': prescription.notes, 'created_at': prescription.created_at.isoformat()}
 
 
 @csrf_exempt
 @require_http_methods(['POST'])
 def token(request):
+    # Troca credenciais por um token com expiração; o valor bruto só é retornado aqui.
     try:
         payload = json.loads(request.body or '{}')
     except json.JSONDecodeError:
@@ -62,6 +65,7 @@ def prescriptions(request):
     if user is None:
         return _json_error('Token Bearer obrigatório.', 401)
     if request.method == 'GET':
+        # O filtro por owner impede que um usuário leia registros de outra conta.
         items = Prescription.objects.filter(owner=user)[:50]
         return JsonResponse({'results': [_serialize(item) for item in items]})
     try:
@@ -73,6 +77,7 @@ def prescriptions(request):
         return _json_error('source_text é obrigatório e deve ter no máximo 20.000 caracteres.', 400)
     if payload.get('source_type', 'text') != 'text':
         return _json_error('A API aceita texto; use o endpoint web para uploads.', 400)
+    # Reutiliza o mesmo extrator local da interface web para manter resultados iguais.
     result = extract_prescription(source_text)
     item = Prescription.objects.create(owner=user, source_text=source_text, source_type='text', **result)
     audit(request, 'prescription.create', user=user, metadata={'id': item.pk})

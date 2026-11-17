@@ -11,6 +11,8 @@ from .models import AuditEvent
 
 
 def audit(request, action, outcome='success', metadata=None, user=None):
+    # Auditoria é observabilidade: uma falha de log não deve derrubar o fluxo
+    # principal de login ou processamento da prescrição.
     try:
         AuditEvent.objects.create(user=user or (request.user if getattr(request, 'user', None) and request.user.is_authenticated else None), action=action, outcome=outcome, ip_address=client_ip(request), metadata=metadata or {})
     except Exception:
@@ -18,6 +20,8 @@ def audit(request, action, outcome='success', metadata=None, user=None):
 
 
 def login_with_protection(request, username, password):
+    # A chave combina IP e usuário para reduzir tentativas automatizadas sem
+    # bloquear todas as contas atrás do mesmo endereço de rede.
     ip = client_ip(request) or 'unknown'
     digest = hashlib.sha256(f'{ip}:{username}'.lower().encode()).hexdigest()
     key = f'medextract-login:{digest}'

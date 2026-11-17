@@ -9,8 +9,12 @@ ALLOWED_CONTENT_TYPES = {'image': {'image/jpeg', 'image/png', 'image/webp'}, 'au
 
 
 def validate_upload(uploaded_file, source_type: str) -> None:
+    # O limite é aplicado antes de chamar Pillow ou o transcritor para evitar
+    # consumo excessivo de memória/CPU por arquivos enviados ao demo.
     if uploaded_file.size > MAX_UPLOAD_BYTES:
         raise ValidationError('O arquivo excede o limite de 10 MB.')
+    # Extensão e MIME são verificações complementares; a rotina de OCR ainda
+    # valida a assinatura real da imagem antes de processá-la.
     suffix = Path(uploaded_file.name).suffix.lower()
     allowed = ALLOWED_IMAGE_EXTENSIONS if source_type == 'image' else ALLOWED_AUDIO_EXTENSIONS
     if suffix not in allowed:

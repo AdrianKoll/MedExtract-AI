@@ -11,6 +11,8 @@ from .security import audit
 
 
 def _protect(value):
+    # Django assina o valor para detectar adulteração caso ele seja lido depois.
+    # Em produção, use um cofre dedicado se o segredo precisar ser recuperável.
     return signing.dumps(value) if value else ''
 
 
@@ -21,6 +23,8 @@ def integrations(request):
     if user is None:
         return _json_error('Token Bearer obrigatório.', 401)
     if request.method == 'GET':
+        # Nunca devolve o segredo salvo; apenas dados necessários para gerenciar
+        # a integração pertencente ao usuário autenticado.
         return JsonResponse({'results': [{'id': x.pk, 'provider': x.provider, 'name': x.name, 'endpoint': x.endpoint, 'enabled': x.enabled, 'created_at': x.created_at.isoformat()} for x in user.integrations.all()]})
     try:
         payload = json.loads(request.body or '{}')
