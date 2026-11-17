@@ -59,11 +59,11 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-# Comprime os arquivos estáticos e permite servi-los sem depender de um
-# manifesto pré-gerado durante testes ou inicializações limpas do container.
+# O WhiteNoise serve os arquivos coletados diretamente; o armazenamento simples
+# evita manifestos/compressão que podem deixar um volume antigo inconsistente.
 STORAGES = {
     'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
-    'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage'},
+    'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
 }
 MEDIA_ROOT = BASE_DIR / 'media'
 MEDIA_URL = 'media/'

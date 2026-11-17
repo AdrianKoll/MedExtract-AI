@@ -2,7 +2,9 @@ from pathlib import Path
 
 from django.core.exceptions import ValidationError
 
-MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+# Limite conservador para o plano gratuito; imagens maiores podem ser
+# descomprimidas para centenas de megabytes durante o OCR.
+MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 ALLOWED_IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.webp'}
 ALLOWED_AUDIO_EXTENSIONS = {'.wav', '.mp3', '.m4a', '.webm', '.ogg'}
 ALLOWED_CONTENT_TYPES = {'image': {'image/jpeg', 'image/png', 'image/webp'}, 'audio': {'audio/wav', 'audio/x-wav', 'audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/webm', 'audio/ogg', 'application/ogg'}}
@@ -12,7 +14,7 @@ def validate_upload(uploaded_file, source_type: str) -> None:
     # O limite é aplicado antes de chamar Pillow ou o transcritor para evitar
     # consumo excessivo de memória/CPU por arquivos enviados ao demo.
     if uploaded_file.size > MAX_UPLOAD_BYTES:
-        raise ValidationError('O arquivo excede o limite de 10 MB.')
+        raise ValidationError('O arquivo excede o limite de 5 MB.')
     # Extensão e MIME são verificações complementares; a rotina de OCR ainda
     # valida a assinatura real da imagem antes de processá-la.
     suffix = Path(uploaded_file.name).suffix.lower()

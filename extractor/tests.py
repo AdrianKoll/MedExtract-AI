@@ -1,9 +1,11 @@
 import json
+from io import BytesIO
 
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
+from PIL import Image
 
 from .models import ApiToken, Prescription
 from .ocr import extract_text_from_image
@@ -45,6 +47,14 @@ class ExtractionTests(TestCase):
         # A extensão e o MIME podem ser falsificados; Pillow precisa confirmar o conteúdo.
         upload = SimpleUploadedFile('fake.png', b'not an image', content_type='image/png')
         with self.assertRaises(ValueError):
+            extract_text_from_image(upload)
+
+    def test_ocr_rejects_images_with_too_many_pixels(self):
+        # O cabeçalho é analisado antes de verify() para evitar OOM no servidor.
+        buffer = BytesIO()
+        Image.new('RGB', (4000, 3000), 'white').save(buffer, format='PNG')
+        upload = SimpleUploadedFile('large.png', buffer.getvalue(), content_type='image/png')
+        with self.assertRaisesMessage(ValueError, 'grande demais'):
             extract_text_from_image(upload)
 
     def test_clear_history_only_deletes_current_users_records(self):
