@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 
 from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
@@ -10,7 +11,7 @@ from .ocr import extract_text_from_image
 from .security import audit, login_with_protection
 from .services import extract_prescription
 from .transcription import transcribe_audio
-from .validators import validate_upload
+from .validators import ALLOWED_AUDIO_EXTENSIONS, ALLOWED_IMAGE_EXTENSIONS, validate_upload
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,15 @@ def dashboard(request):
                 raise ValidationError('O texto excede o limite permitido.')
             if uploaded_file:
                 if source_type == 'text':
-                    raise ValidationError('Selecione imagem ou áudio para enviar um arquivo.')
+                    # Se o usuário escolheu um arquivo mas esqueceu o seletor,
+                    # identifica o tipo pela extensão antes de validar o conteúdo.
+                    suffix = Path(uploaded_file.name).suffix.lower()
+                    if suffix in ALLOWED_IMAGE_EXTENSIONS:
+                        source_type = 'image'
+                    elif suffix in ALLOWED_AUDIO_EXTENSIONS:
+                        source_type = 'audio'
+                    else:
+                        raise ValidationError('Selecione imagem ou áudio para enviar um arquivo.')
                 validate_upload(uploaded_file, source_type)
                 # Imagem passa pelo Tesseract; áudio passa pelo mecanismo local
                 # configurado em transcription.py, sem envio automático externo.

@@ -1,5 +1,6 @@
 import json
 from io import BytesIO
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -56,6 +57,14 @@ class ExtractionTests(TestCase):
         upload = SimpleUploadedFile('large.png', buffer.getvalue(), content_type='image/png')
         with self.assertRaisesMessage(ValueError, 'grande demais'):
             extract_text_from_image(upload)
+
+    @patch('extractor.views.extract_text_from_image', return_value='Dipirona 500 mg por 3 dias.')
+    def test_image_upload_is_detected_when_type_remains_text(self, extract_text):
+        upload = SimpleUploadedFile('recipe.png', b'fake image', content_type='image/png')
+        response = self.client.post(reverse('dashboard'), {'source_type': 'text', 'source_file': upload})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Dipirona')
+        extract_text.assert_called_once()
 
     def test_clear_history_only_deletes_current_users_records(self):
         self.client.force_login(self.user)
