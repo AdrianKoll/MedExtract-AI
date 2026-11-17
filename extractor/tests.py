@@ -24,6 +24,20 @@ class ExtractionTests(TestCase):
         self.assertEqual(result['strength'], '500 mg')
         self.assertEqual(result['duration'], 'por 7 dias')
 
+    def test_extracts_medicine_from_full_ocr_prescription(self):
+        text = (
+            '**CLÍNICA SANTA VIDA** **PRESCRIÇÃO** '
+            '**1. Paracetamol 750 mg** - Quantidade: 20 comprimidos - '
+            'Posologia: Tomar 1 comprimido a cada 6 horas, por 5 dias. '
+            '**2. Loratadina 10 mg** - Quantidade: 7 comprimidos.'
+        )
+        result = extract_prescription(text)
+        self.assertEqual(result['medicine'], 'Paracetamol')
+        self.assertEqual(result['strength'], '750 mg')
+        self.assertEqual(result['quantity'], 'Quantidade: 20')
+        self.assertEqual(result['duration'], 'por 5 dias')
+        self.assertIn('Loratadina 10 mg', result['notes'])
+
     def test_dashboard_public_demo_does_not_persist(self):
         response = self.client.post(reverse('dashboard'), {'source_type': 'text', 'source_text': 'Dipirona 500 mg por 3 dias.'})
         self.assertEqual(response.status_code, 200)
