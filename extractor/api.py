@@ -25,8 +25,17 @@ def _json_error(message, status):
 
 
 def _serialize(prescription):
-    # Mantém uma resposta estável para o cliente sem retornar campos internos.
-    return {'id': prescription.pk, 'source_type': prescription.source_type, 'source_name': prescription.source_name, 'medicine': prescription.medicine, 'strength': prescription.strength, 'quantity': prescription.quantity, 'dosage': prescription.dosage, 'duration': prescription.duration, 'notes': prescription.notes, 'created_at': prescription.created_at.isoformat()}
+    # Mantém os campos legados e acrescenta uma lista estruturada para clientes
+    # que precisam apresentar cada medicamento sem perder detalhes por item.
+    medications = prescription.medications or [{
+        'medicine': prescription.medicine,
+        'strength': prescription.strength,
+        'quantity': prescription.quantity,
+        'dosage': prescription.dosage,
+        'duration': prescription.duration,
+        'notes': prescription.notes,
+    }]
+    return {'id': prescription.pk, 'source_type': prescription.source_type, 'source_name': prescription.source_name, 'medicine': prescription.medicine, 'strength': prescription.strength, 'quantity': prescription.quantity, 'dosage': prescription.dosage, 'duration': prescription.duration, 'notes': prescription.notes, 'medications': medications, 'created_at': prescription.created_at.isoformat()}
 
 
 @csrf_exempt

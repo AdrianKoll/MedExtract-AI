@@ -95,6 +95,7 @@ class Prescription(models.Model):
     dosage = models.CharField(max_length=240, blank=True)
     duration = models.CharField(max_length=120, blank=True)
     notes = models.TextField(blank=True)
+    medications = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

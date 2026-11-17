@@ -34,15 +34,37 @@ class ExtractionTests(TestCase):
         result = extract_prescription(text)
         self.assertEqual(result['medicine'], 'Paracetamol')
         self.assertEqual(result['strength'], '750 mg')
-        self.assertEqual(result['quantity'], 'Quantidade: 20')
+        self.assertEqual(result['quantity'], '20 comprimidos')
         self.assertEqual(result['duration'], 'por 5 dias')
-        self.assertIn('Loratadina 10 mg', result['notes'])
+        self.assertEqual([item['medicine'] for item in result['medications']], ['Paracetamol', 'Loratadina'])
+        self.assertEqual(result['medications'][0]['quantity'], '20 comprimidos')
+        self.assertEqual(result['medications'][1]['quantity'], '7 comprimidos')
+        self.assertEqual(result['notes'], '')
+
+    def test_extracts_any_number_of_medicines_with_independent_fields(self):
+        result = extract_prescription(
+            '1. Paracetamol 750 mg - Quantidade: 20 comprimidos - '
+            'Tomar 1 comprimido a cada 6 horas por 5 dias. '
+            '2. Loratadina 10 mg - Quantidade: 7 comprimidos - Tomar 1 comprimido à noite por 7 dias. '
+            '3. Omeprazol 20 mg - Quantidade: 14 cápsulas - Tomar 1 cápsula pela manhã por 14 dias. '
+            '4. Dipirona 500 mg - Quantidade: 10 comprimidos.'
+        )
+        medications = result['medications']
+        self.assertEqual(len(medications), 4)
+        self.assertEqual([item['medicine'] for item in medications], ['Paracetamol', 'Loratadina', 'Omeprazol', 'Dipirona'])
+        self.assertEqual([item['quantity'] for item in medications], ['20 comprimidos', '7 comprimidos', '14 cápsulas', '10 comprimidos'])
+        self.assertEqual(medications[0]['duration'], 'por 5 dias')
+        self.assertEqual(medications[1]['duration'], 'por 7 dias')
+        self.assertEqual(medications[2]['duration'], 'por 14 dias')
 
     def test_dashboard_public_demo_does_not_persist(self):
         response = self.client.post(reverse('dashboard'), {'source_type': 'text', 'source_text': 'Dipirona 500 mg por 3 dias.'})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Prescription.objects.count(), 0)
         self.assertContains(response, 'Dados extraídos')
+        self.assertContains(response, 'Medicamento 1: Dipirona')
+        self.assertContains(response, 'Quantidade')
+        self.assertNotContains(response, 'QUANTITY')
 
     def test_authenticated_dashboard_persists_only_for_current_user(self):
         self.client.force_login(self.user)
@@ -50,6 +72,7 @@ class ExtractionTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Prescription.objects.filter(owner=self.user).count(), 1)
         self.assertEqual(Prescription.objects.filter(owner=self.other_user).count(), 0)
+        self.assertEqual(Prescription.objects.get(owner=self.user).medications[0]['medicine'], 'Dipirona')
 
     def test_dashboard_rejects_disallowed_upload_extension(self):
         upload = SimpleUploadedFile('payload.exe', b'not allowed')
@@ -109,5 +132,6 @@ class ExtractionTests(TestCase):
         self.assertEqual(listing.status_code, 200)
         self.assertEqual(len(listing.json()['results']), 1)
         self.assertEqual(listing.json()['results'][0]['id'], own.json()['id'])
+        self.assertEqual(own.json()['medications'][0]['medicine'], 'Amoxicilina')
         forbidden = self.client.get(reverse('api-prescription-detail', kwargs={'pk': other.pk}), HTTP_AUTHORIZATION=f'Bearer {token}')
         self.assertEqual(forbidden.status_code, 404)

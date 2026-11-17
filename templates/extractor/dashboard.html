@@ -36,7 +36,20 @@
       </form>
       <section class="card">
         <p class="eyebrow">Saída</p><h2>Dados extraídos</h2>
-        {% if result %}<dl>{% for key, value in result.items %}<div><dt>{{ key|title }}</dt><dd>{{ value|default:'Não identificado' }}</dd></div>{% endfor %}</dl>{% else %}<p class="empty">Envie uma prescrição de teste para validar o fluxo.</p>{% endif %}
+        {% if result %}
+          {% for medication in result.medications %}
+            <article class="medication-result">
+              <h3>Medicamento {{ forloop.counter }}: {{ medication.medicine|default:'Não identificado' }}</h3>
+              <dl>
+                <div><dt>Concentração</dt><dd>{{ medication.strength|default:'Não identificada' }}</dd></div>
+                <div><dt>Quantidade</dt><dd>{{ medication.quantity|default:'Não identificada' }}</dd></div>
+                <div><dt>Posologia</dt><dd>{{ medication.dosage|default:'Não identificada' }}</dd></div>
+                <div><dt>Duração</dt><dd>{{ medication.duration|default:'Não identificada' }}</dd></div>
+                {% if medication.notes %}<div><dt>Observações</dt><dd>{{ medication.notes }}</dd></div>{% endif %}
+              </dl>
+            </article>
+          {% endfor %}
+        {% else %}<p class="empty">Envie uma prescrição de teste para validar o fluxo.</p>{% endif %}
       </section>
     </section>
     {% if request.user.is_authenticated %}

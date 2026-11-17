@@ -24,6 +24,10 @@ dl{margin:0;display:grid;gap:10px}
 dl div{border-bottom:1px solid #e8eeec;padding-bottom:9px}
 dt{color:#176b63;font-size:11px;font-weight:800;text-transform:uppercase}
 dd{margin:4px 0 0;font-size:14px}
+.medication-result{padding:14px 0;border-bottom:1px solid #d5dfdc}
+.medication-result:first-of-type{padding-top:0}
+.medication-result h3{margin:0 0 12px;font-size:16px}
+.medication-result dl{gap:8px}
 .upload-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
 .upload-row input,.upload-row select{display:block;width:100%;margin-top:7px;border:1px solid #d5dfdc;border-radius:8px;padding:10px;background:#fbfdfc;font:inherit;font-size:12px}
 .error{border-left:3px solid #b14d42;padding:10px;color:#8a3f36;background:#fff4f2;font-size:12px}
