@@ -1,3 +1,24 @@
+{% load static %}
 <!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Entrar | MedExtract</title></head>
-<body><main><h1>Entrar no MedExtract</h1><form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit">Entrar</button></form><p><a href="{% url 'signup' %}">Criar conta</a> · <a href="{% url 'dashboard' %}">Voltar à vitrine</a></p></main></body></html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Entrar | MedExtract</title>
+  <link rel="stylesheet" href="{% static 'extractor/app.css' %}">
+</head>
+<body>
+  <main class="shell">
+    <section class="card">
+      <p class="eyebrow">Área privada</p>
+      <h1>Entrar no MedExtract</h1>
+      <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Entrar</button>
+      </form>
+      <p><a href="{% url 'signup' %}">Criar conta</a> · <a href="{% url 'dashboard' %}">Voltar à vitrine</a></p>
+    </section>
+  </main>
+</body>
+</html>
