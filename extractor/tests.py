@@ -74,6 +74,25 @@ class ExtractionTests(TestCase):
         self.assertEqual(Prescription.objects.filter(owner=self.other_user).count(), 0)
         self.assertEqual(Prescription.objects.get(owner=self.user).medications[0]['medicine'], 'Dipirona')
 
+    def test_history_displays_all_medicines_from_one_prescription(self):
+        self.client.force_login(self.user)
+        Prescription.objects.create(
+            owner=self.user,
+            source_text='Receita com três medicamentos',
+            medicine='Amoxicilina',
+            strength='500 mg',
+            medications=[
+                {'medicine': 'Amoxicilina', 'strength': '500 mg', 'quantity': '21 cápsulas'},
+                {'medicine': 'Loratadina', 'strength': '10 mg', 'quantity': '7 comprimidos'},
+                {'medicine': 'Omeprazol', 'strength': '20 mg', 'quantity': '14 cápsulas'},
+            ],
+        )
+        response = self.client.get(reverse('dashboard'))
+        self.assertContains(response, 'Amoxicilina')
+        self.assertContains(response, 'Loratadina')
+        self.assertContains(response, 'Omeprazol')
+        self.assertContains(response, '14 cápsulas')
+
     def test_dashboard_rejects_disallowed_upload_extension(self):
         upload = SimpleUploadedFile('payload.exe', b'not allowed')
         response = self.client.post(reverse('dashboard'), {'source_type': 'image', 'source_file': upload})

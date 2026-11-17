@@ -54,7 +54,33 @@
     </section>
     {% if request.user.is_authenticated %}
     <section class="card history"><div class="history-head"><div><p class="eyebrow">Área privada</p><h2>Meu histórico</h2></div><form method="post" action="{% url 'clear_history' %}">{% csrf_token %}<button class="quiet" type="submit">Apagar meus registros</button></form></div>
-      {% if history %}<div class="records">{% for item in history %}<article><strong>{{ item.medicine|default:'Sem medicamento identificado' }}</strong><span>{{ item.strength|default:'Sem concentração' }} · {{ item.created_at|date:'d/m/Y H:i' }}</span></article>{% endfor %}</div>{% else %}<p class="empty">Nenhum registro salvo para sua conta.</p>{% endif %}
+      {% if history %}
+        <div class="records">
+          {% for item in history %}
+            <article class="history-record">
+              <div class="history-record-heading">
+                <strong>Medicamentos da prescrição</strong>
+                <time>{{ item.created_at|date:'d/m/Y H:i' }}</time>
+              </div>
+              <ul class="history-medications">
+                {% if item.medications %}
+                  {% for medication in item.medications %}
+                    <li>
+                      <strong>{{ medication.medicine|default:'Medicamento não identificado' }}</strong>
+                      <span>{% if medication.strength %}{{ medication.strength }}{% else %}Sem concentração{% endif %}{% if medication.quantity %} · {{ medication.quantity }}{% endif %}</span>
+                    </li>
+                  {% endfor %}
+                {% else %}
+                  <li>
+                    <strong>{{ item.medicine|default:'Medicamento não identificado' }}</strong>
+                    <span>{{ item.strength|default:'Sem concentração' }}{% if item.quantity %} · {{ item.quantity }}{% endif %}</span>
+                  </li>
+                {% endif %}
+              </ul>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}<p class="empty">Nenhum registro salvo para sua conta.</p>{% endif %}
     </section>
     {% endif %}
   </main>
