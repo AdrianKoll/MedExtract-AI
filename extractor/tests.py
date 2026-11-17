@@ -72,6 +72,14 @@ class ExtractionTests(TestCase):
         with self.assertRaisesMessage(ValueError, 'grande demais'):
             extract_text_from_image(upload)
 
+    @patch('extractor.ocr.pytesseract.image_to_string', return_value='Amoxicilina 500 mg')
+    def test_ocr_uses_longer_timeout_for_slow_instances(self, image_to_string):
+        buffer = BytesIO()
+        Image.new('RGB', (400, 300), 'white').save(buffer, format='PNG')
+        upload = SimpleUploadedFile('recipe.png', buffer.getvalue(), content_type='image/png')
+        self.assertEqual(extract_text_from_image(upload), 'Amoxicilina 500 mg')
+        self.assertEqual(image_to_string.call_args.kwargs['timeout'], 60)
+
     @patch('extractor.views.extract_text_from_image', return_value='Dipirona 500 mg por 3 dias.')
     def test_image_upload_is_detected_when_type_remains_text(self, extract_text):
         upload = SimpleUploadedFile('recipe.png', b'fake image', content_type='image/png')

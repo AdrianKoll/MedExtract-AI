@@ -29,4 +29,4 @@ USER appuser
 
 EXPOSE 8000
 ENTRYPOINT ["medextract-entrypoint"]
-CMD ["sh", "-c", "exec gunicorn medextract.wsgi:application --bind 0.0.0.0:${PORT:-8000} --access-logfile - --error-logfile -"]
+CMD ["sh", "-c", "exec gunicorn medextract.wsgi:application --bind 0.0.0.0:${PORT:-8000} --timeout 75 --access-logfile - --error-logfile -"]

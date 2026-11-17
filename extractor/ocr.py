@@ -9,7 +9,9 @@ logger = logging.getLogger(__name__)
 
 MAX_IMAGE_PIXELS_FOR_OCR = 8_000_000
 MAX_OCR_DIMENSION = 1400
-OCR_TIMEOUT_SECONDS = 20
+# Instâncias econômicas podem demorar mais para iniciar o Tesseract em imagens
+# complexas; 20 s provocava falsos erros mesmo com imagens válidas.
+OCR_TIMEOUT_SECONDS = 60
 OCR_LANGUAGE = 'por'
 OCR_CONFIG = '--psm 6'
 
